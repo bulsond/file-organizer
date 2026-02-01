@@ -1,7 +1,9 @@
 package main
 
+// DefaultRules правила для сортировки файлов
 type DefaultRules map[string]string
 
+// NewDefaultRules создание экземпляра правил сортировки
 func NewDefaultRules() DefaultRules {
 	return DefaultRules{
 		// Music
