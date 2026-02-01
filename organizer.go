@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 const (
@@ -119,4 +122,63 @@ func (fo *FileOrganizer) writeRecord(msgType, message string) {
 	logger = log.New(fo.logFile, "", log.LstdFlags)
 	// Логгер автоматически добавит временную метку
 	logger.Printf("%s %s", msgType, message)
+}
+
+// moveFile перемещение файла
+func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
+	var msg string
+	// существование исходного файла
+	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+		msg = fmt.Sprintf("Исходный файл не найден: %s", sourcePath)
+		fo.logError(msg)
+		return errors.New(msg)
+	}
+
+	// целевая директория
+	fullTargetDir := filepath.Join(fo.sourceDir, targetDir)
+	if err := os.MkdirAll(fullTargetDir, 0775); err != nil {
+		msg = fmt.Sprintf("Не удалось создать директорию %s: %v", targetDir, err)
+		fo.logError(msg)
+		return errors.New(msg)
+	}
+	msg = fmt.Sprintf("Целевая директория: %s", targetDir)
+	fo.logSuccess(msg)
+
+	// имя файла
+	fileName := filepath.Base(sourcePath)
+	msg = fmt.Sprintf("Исходный файл: %s", fileName)
+	fo.logSuccess(msg)
+
+	// полный путь к целевому файлу
+	targetPath := filepath.Join(fullTargetDir, fileName)
+
+	// есть ли конфликт имен
+	if _, err := os.Stat(targetPath); err == nil {
+		// значит такой уже есть, создаем новое имя
+		msg = fmt.Sprintf("Существующий файл: %s/%s", targetDir, fileName)
+		fo.logSuccess(msg)
+		fileName = fo.generateFileName(fileName)
+		targetPath = filepath.Join(fullTargetDir, fileName)
+	}
+
+	// перемещение файла
+	if err := os.Rename(sourcePath, targetPath); err != nil {
+		msg = fmt.Sprintf("Не удалось переместить файл %s: %v", fileName, err)
+		fo.logError(msg)
+		return errors.New(msg)
+	}
+
+	msg = fmt.Sprintf("Результат: %s/%s", targetDir, fileName)
+	fo.logSuccess(msg)
+
+	return nil
+}
+
+// generateFileName создание нового имени файла с постфиксом
+func (fo *FileOrganizer) generateFileName(fileName string) string {
+	ext := filepath.Ext(fileName)
+	name := strings.TrimSuffix(fileName, ext)
+	postfix := time.Now().Format("2006-03-15_15-04-05")
+
+	return fmt.Sprintf("%s_%s%s", name, postfix, ext)
 }
