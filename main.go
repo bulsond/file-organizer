@@ -10,5 +10,14 @@ func main() {
 		fmt.Printf("Расширение: %s -> Папка: %s\n", ext, folder)
 	}
 
-	fmt.Println(NewFileOrganizer("."))
+	fileOrganizer, err := NewFileOrganizer(".")
+	if err != nil {
+		panic(err)
+	}
+	defer fileOrganizer.Close()
+	fmt.Println(fileOrganizer)
+
+	fileOrganizer.logSuccess("Выполнена успешная операция")
+	fileOrganizer.logError("Выполнение вызвало ошибку")
+
 }
