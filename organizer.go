@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-	"time"
 )
 
 const (
@@ -80,28 +78,6 @@ func (fo *FileOrganizer) Close() error {
 	return nil
 }
 
-// NewLogFile создание ссылки на лог файл
-func NewLogFile(logPath string) (*os.File, error) {
-	if len(logPath) == 0 {
-		return nil, errors.New("Не указан путь к файлу логов")
-	}
-
-	logFile, err := os.OpenFile(
-		logPath,
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-		0644,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Создаем логгер для записи начала сессии
-	logger := log.New(logFile, "", 0)
-	logger.Printf("%s Сессия начата", SystemMsg)
-
-	return logFile, nil
-}
-
 // logSuccess создать запись об успешной операции
 func (fo *FileOrganizer) logSuccess(message string) {
 	fo.writeRecord(SuccessMsg, message)
@@ -157,7 +133,7 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 		// значит такой уже есть, создаем новое имя
 		msg = fmt.Sprintf("Существующий файл: %s/%s", targetDir, fileName)
 		fo.logSuccess(msg)
-		fileName = fo.generateFileName(fileName)
+		fileName = generateFileName(fileName)
 		targetPath = filepath.Join(fullTargetDir, fileName)
 	}
 
@@ -174,11 +150,6 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 	return nil
 }
 
-// generateFileName создание нового имени файла с постфиксом
-func (fo *FileOrganizer) generateFileName(fileName string) string {
-	ext := filepath.Ext(fileName)
-	name := strings.TrimSuffix(fileName, ext)
-	postfix := time.Now().Format("2006-03-15_15-04-05")
+// func (fo *FileOrganizer) Organize() error {
 
-	return fmt.Sprintf("%s_%s%s", name, postfix, ext)
-}
+// }
