@@ -206,7 +206,7 @@ func (fo *FileOrganizer) walkWoker(path string, d fs.DirEntry, err error) error 
 	}
 
 	// Перемещаем файл
-	_, errM := fo.moveFile(path, targetDir)
+	size, errM := fo.moveFile(path, targetDir)
 	if errM != nil {
 		msg = fmt.Sprintf("Не удалось переместить файл %s: %v",
 			filepath.Base(path), err)
@@ -214,12 +214,50 @@ func (fo *FileOrganizer) walkWoker(path string, d fs.DirEntry, err error) error 
 		return nil
 	}
 
-	// увеличиваем счетчик файлов
-	fo.processedFiles++
+	fo.setStats(size, targetDir)
 
 	return nil // продолжаем обход
 }
 
-func (fo *FileOrganizer) setStats() {
+// setStats сбор статистики по перемещенным файлам
+func (fo *FileOrganizer) setStats(size int64, targetDir string) {
+	// увеличиваем счетчик файлов
+	fo.processedFiles++
 
+	// получаем или создаем новый FileStats
+	fstats, exists := fo.statistics[targetDir]
+	if !exists {
+		fstats = &FileStats{}
+		fo.statistics[targetDir] = fstats
+	}
+	// показатели
+	fstats.Count++
+	fstats.TotalSize += size
+}
+
+// Report отобажение отчета о перемещении файлов
+func (fo *FileOrganizer) Report() {
+	fmt.Println("=== Отчет о перемещении файлов ===")
+	fmt.Println()
+
+	fmt.Printf("Всего обработано файлов: %d\n", fo.processedFiles)
+
+	size := fo.countTotalSize()
+	fmt.Printf("Общий размер: %s\n", stringTotalSize(size))
+	fmt.Println()
+
+	fmt.Println("Статистика по категориям:")
+	for dir, fs := range fo.statistics {
+		fmt.Println(dir)
+		fmt.Println(fs)
+	}
+}
+
+// countTotalSize суммировать общий размер перемещенных файлов
+func (fo *FileOrganizer) countTotalSize() int64 {
+	var total int64
+	for _, fs := range fo.statistics {
+		total += fs.TotalSize
+	}
+	return total
 }
