@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -150,6 +151,66 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 	return nil
 }
 
-// func (fo *FileOrganizer) Organize() error {
+// Organize сортировка файлов в целевой дериктории
+func (fo *FileOrganizer) Organize() error {
+	fo.logSuccess("Начинаем сортировку файлов в директории: " + fo.sourceDir)
 
-// }
+	err := filepath.WalkDir(fo.sourceDir, fo.walkWoker)
+	if err != nil {
+		fo.logError(fmt.Sprintf("Ошибка при сканировании директории: %v", err))
+		return fmt.Errorf("ошибка сканирования: %w", err)
+	}
+
+	fo.logSuccess("Завершили сортировку файлов")
+	return nil
+}
+
+// walkWoker обработчик для filepath.WalkDir
+func (fo *FileOrganizer) walkWoker(path string, d fs.DirEntry, err error) error {
+	var msg string
+	// Пропускаем ошибки доступа (например, к недоступным директориям)
+	if err != nil {
+		msg = fmt.Sprintf("Ошибка доступа к %s: %v", path, err)
+		fo.logError(msg)
+		return nil
+	}
+
+	// Пропускаем директории — нам нужны только файлы
+	if path == fo.sourceDir {
+		return nil
+	}
+	if d.IsDir() {
+		return fs.SkipDir // пропускаем содержимое поддиректорий
+	}
+
+	// увеличиваем счетчик файлов
+	fo.processedFiles++
+
+	// Проверяем расширение файла
+	ext := filepath.Ext(path)
+	if len(ext) == 0 {
+		msg = fmt.Sprintf("Файл не имеет расширения: %s",
+			filepath.Base(path))
+		fo.logError(msg)
+		return nil
+	}
+
+	targetDir, exists := fo.rulesMap[ext]
+	if !exists {
+		msg = fmt.Sprintf("Неизвестное расширение %s у файла: %s",
+			ext, filepath.Base(path))
+		fo.logError(msg)
+		return nil
+	}
+
+	// Перемещаем файл
+	errM := fo.moveFile(path, targetDir)
+	if errM != nil {
+		msg = fmt.Sprintf("Не удалось переместить файл %s: %v",
+			filepath.Base(path), err)
+		fo.logError(msg)
+		return nil
+	}
+
+	return nil // продолжаем обход
+}

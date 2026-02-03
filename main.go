@@ -3,21 +3,20 @@ package main
 import "fmt"
 
 func main() {
+	const dir = "generated_files"
 	fmt.Println("Привет")
 
-	rules := NewDefaultRules()
-	for ext, folder := range rules {
-		fmt.Printf("Расширение: %s -> Папка: %s\n", ext, folder)
-	}
-
-	fileOrganizer, err := NewFileOrganizer(".")
+	fo, err := NewFileOrganizer(dir)
 	if err != nil {
 		panic(err)
 	}
-	defer fileOrganizer.Close()
-	fmt.Println(fileOrganizer)
+	defer fo.Close()
 
-	fileOrganizer.logSuccess("Выполнена успешная операция")
-	fileOrganizer.logError("Выполнение вызвало ошибку")
-
+	// работаем
+	fmt.Println("Начинаю сортировку файлов...")
+	if err := fo.Organize(); err != nil {
+		fmt.Printf("Ошибка при сортировке: %v\n", err)
+	} else {
+		fmt.Println("Сортировка завершена успешно!")
+	}
 }
