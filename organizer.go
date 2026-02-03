@@ -103,22 +103,25 @@ func (fo *FileOrganizer) writeRecord(msgType, message string) {
 	logger.Printf("%s %s", msgType, message)
 }
 
-// moveFile перемещение файла
-func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
+// moveFile перемещение файла, возвращает размер перемещенного файла
+func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) (int64, error) {
 	var msg string
+	var size int64
 	// существование исходного файла
-	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+	origInfo, err := os.Stat(sourcePath)
+	if os.IsNotExist(err) {
 		msg = fmt.Sprintf("Исходный файл не найден: %s", sourcePath)
 		fo.logError(msg)
-		return errors.New(msg)
+		return size, errors.New(msg)
 	}
+	size = origInfo.Size()
 
 	// целевая директория
 	fullTargetDir := filepath.Join(fo.sourceDir, targetDir)
 	if err := os.MkdirAll(fullTargetDir, 0775); err != nil {
 		msg = fmt.Sprintf("Не удалось создать директорию %s: %v", targetDir, err)
 		fo.logError(msg)
-		return errors.New(msg)
+		return size, errors.New(msg)
 	}
 	msg = fmt.Sprintf("Целевая директория: %s", targetDir)
 	fo.logSuccess(msg)
@@ -144,13 +147,13 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 	if err := os.Rename(sourcePath, targetPath); err != nil {
 		msg = fmt.Sprintf("Не удалось переместить файл %s: %v", fileName, err)
 		fo.logError(msg)
-		return errors.New(msg)
+		return size, errors.New(msg)
 	}
 
 	msg = fmt.Sprintf("Результат: %s/%s", targetDir, fileName)
 	fo.logSuccess(msg)
 
-	return nil
+	return size, nil
 }
 
 // Organize сортировка файлов в целевой дериктории
@@ -185,9 +188,6 @@ func (fo *FileOrganizer) walkWoker(path string, d fs.DirEntry, err error) error 
 		return fs.SkipDir // пропускаем содержимое поддиректорий
 	}
 
-	// увеличиваем счетчик файлов
-	fo.processedFiles++
-
 	// Проверяем расширение файла
 	ext := filepath.Ext(path)
 	if len(ext) == 0 {
@@ -206,7 +206,7 @@ func (fo *FileOrganizer) walkWoker(path string, d fs.DirEntry, err error) error 
 	}
 
 	// Перемещаем файл
-	errM := fo.moveFile(path, targetDir)
+	_, errM := fo.moveFile(path, targetDir)
 	if errM != nil {
 		msg = fmt.Sprintf("Не удалось переместить файл %s: %v",
 			filepath.Base(path), err)
@@ -214,5 +214,12 @@ func (fo *FileOrganizer) walkWoker(path string, d fs.DirEntry, err error) error 
 		return nil
 	}
 
+	// увеличиваем счетчик файлов
+	fo.processedFiles++
+
 	return nil // продолжаем обход
+}
+
+func (fo *FileOrganizer) setStats() {
+
 }

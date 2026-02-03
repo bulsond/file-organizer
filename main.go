@@ -4,9 +4,10 @@ import "fmt"
 
 func main() {
 	const dir = "generated_files"
+	const dubDir = "."
 	fmt.Println("Привет")
 
-	fo, err := NewFileOrganizer(dir)
+	fo, err := NewFileOrganizer(dubDir)
 	if err != nil {
 		panic(err)
 	}
