@@ -20,6 +20,7 @@ type FileOrganizer struct {
 	sourceDir      string
 	rulesMap       map[string]string
 	processedFiles int
+	statistics     map[string]*FileStats
 	logFile        *os.File
 }
 
@@ -63,6 +64,7 @@ func NewFileOrganizer(sourceDir string) (*FileOrganizer, error) {
 		sourceDir:      absPath,
 		rulesMap:       NewDefaultRules(),
 		processedFiles: 0,
+		statistics:     map[string]*FileStats{},
 		logFile:        logFile,
 	}, nil
 }

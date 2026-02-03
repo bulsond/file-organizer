@@ -12,11 +12,13 @@ func main() {
 	}
 	defer fo.Close()
 
+	fmt.Println(fo)
+
 	// работаем
-	fmt.Println("Начинаю сортировку файлов...")
-	if err := fo.Organize(); err != nil {
-		fmt.Printf("Ошибка при сортировке: %v\n", err)
-	} else {
-		fmt.Println("Сортировка завершена успешно!")
-	}
+	// fmt.Println("Начинаю сортировку файлов...")
+	// if err := fo.Organize(); err != nil {
+	// 	fmt.Printf("Ошибка при сортировке: %v\n", err)
+	// } else {
+	// 	fmt.Println("Сортировка завершена успешно!")
+	// }
 }
