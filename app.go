@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -53,11 +54,65 @@ func (a *App) Run() {
 		}
 
 		// целевой каталог
-		targetDir := input
-		if len(targetDir) == 0 {
-			targetDir = a.currentDir
+		dir := input
+		if len(dir) == 0 {
+			dir = a.currentDir
 		}
-		fmt.Printf("Выбран каталог %s\n", targetDir)
+		path, err := resolvePath(dir)
+		if err != nil {
+			fmt.Printf("Ошибка разрешения пути: %v\n", err)
+			continue
+		}
+
+		fmt.Printf("Выбран каталог %s\n", path)
+		// сортируем
+		organizeDir(path)
 	}
 	fmt.Println("Успешных договоров о межгалактическом сотрудничестве!")
+}
+
+// resolvePath преобразует путь в абсолютный
+func resolvePath(dir string) (string, error) {
+	// если уже абсолютный путь
+	if filepath.IsAbs(dir) {
+		return filepath.Clean(dir), nil
+	}
+
+	// начинается с ~ (Unix домашняя директория)
+	if strings.HasPrefix(dir, "~") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		// замена тильды
+		dir = filepath.Join(home, dir[1:])
+	}
+
+	// преобразуем относительный в абсолютный
+	absPath, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Clean(absPath), nil
+}
+
+// organizeDir сортировать файлы в каталоге
+func organizeDir(path string) {
+	fo, err := NewFileOrganizer(path)
+	if err != nil {
+		fmt.Printf("Не удалось начать сортировку файлов по причине: %v\n",
+			err)
+	}
+	defer fo.Close()
+
+	// работаем
+	fmt.Println("Начинаю сортировку файлов...")
+	if err := fo.Organize(); err != nil {
+		fmt.Printf("Ошибка при сортировке: %v\n", err)
+	} else {
+		fmt.Println("Сортировка завершена успешно!")
+	}
+
+	fo.Report()
 }
